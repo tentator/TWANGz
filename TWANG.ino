@@ -21,16 +21,16 @@ int16_t ax, ay, az;
 int16_t gx, gy, gz;
 
 // LED setup
-#define NUM_LEDS             475
-#define DATA_PIN             3
-#define CLOCK_PIN            4     
-#define LED_COLOR_ORDER      BGR   //if colours aren't working, try GRB or GBR
+#define NUM_LEDS             300
+#define DATA_PIN             16  //3
+#define CLOCK_PIN            4   // non in uso su questo tipo di striscia led  
+#define LED_COLOR_ORDER      GRB //BGR   //if colours aren't working, try GRB or GBR
 #define BRIGHTNESS           150   //Use a lower value for lower current power supplies(<2 amps)
 #define DIRECTION            1     // 0 = right to left, 1 = left to right
 #define MIN_REDRAW_INTERVAL  16    // Min redraw interval (ms) 33 = 30fps / 16 = 63fps
 #define USE_GRAVITY          1     // 0/1 use gravity (LED strip going up wall)
-#define BEND_POINT           550   // 0/1000 point at which the LED strip goes up the wall
-#define LED_TYPE             APA102//type of LED strip to use(APA102 - DotStar, WS2811 - NeoPixel) For Neopixels, uncomment line #108 and comment out line #106
+#define BEND_POINT           700  //550   // 0/1000 point at which the LED strip goes up the wall
+#define LED_TYPE             WS2812 //WS2811 // APA102//type of LED strip to use(APA102 - DotStar, WS2811 - NeoPixel) For Neopixels, uncomment line #108 and comment out line #106
 
 // GAME
 long previousMillis = 0;           // Time of the last redraw
@@ -43,8 +43,8 @@ iSin isin = iSin();
 
 // JOYSTICK
 #define JOYSTICK_ORIENTATION 1     // 0, 1 or 2 to set the angle of the joystick
-#define JOYSTICK_DIRECTION   1     // 0/1 to flip joystick direction
-#define ATTACK_THRESHOLD     30000 // The threshold that triggers an attack
+#define JOYSTICK_DIRECTION   0     // 0/1 to flip joystick direction
+#define ATTACK_THRESHOLD     25000 // The threshold that triggers an attack
 #define JOYSTICK_DEADZONE    5     // Angle to ignore
 int joystickTilt = 0;              // Stores the angle of the joystick
 int joystickWobble = 0;            // Stores the max amount of acceleration (wobble)
@@ -57,7 +57,7 @@ bool attacking = 0;                // Is the attack in progress?
 #define BOSS_WIDTH          40
 
 // PLAYER
-#define MAX_PLAYER_SPEED    10     // Max move speed of the player
+#define MAX_PLAYER_SPEED    15     // Max move speed of the player
 char* stage;                       // what stage the game is at (PLAY/DEAD/WIN/GAMEOVER)
 long stageStartTime;               // Stores the time the stage changed for stages that are time based
 int playerPosition;                // Stores the player position
@@ -67,7 +67,7 @@ long killTime;
 int lives = 3;
 
 // POOLS
-int lifeLEDs[3] = {52, 50, 40};
+int lifeLEDs[3] = {52, 50, 17};  // Questi sono i LED che mostrano le vite rimaste su tre
 Enemy enemyPool[10] = {
     Enemy(), Enemy(), Enemy(), Enemy(), Enemy(), Enemy(), Enemy(), Enemy(), Enemy(), Enemy()
 };
@@ -95,17 +95,17 @@ RunningMedian MPUAngleSamples = RunningMedian(5);
 RunningMedian MPUWobbleSamples = RunningMedian(5);
 
 void setup() {
-    Serial.begin(9600);
-    while (!Serial);
+    //Serial.begin(9600);
+    //while (!Serial);
     
     // MPU
     Wire.begin();
     accelgyro.initialize();
     
     // Fast LED
-    FastLED.addLeds<LED_TYPE, DATA_PIN, CLOCK_PIN, LED_COLOR_ORDER>(leds, NUM_LEDS);
+    //FastLED.addLeds<LED_TYPE, DATA_PIN, CLOCK_PIN, LED_COLOR_ORDER>(leds, NUM_LEDS);
     //If using Neopixels, use
-    //FastLED.addLeds<LED_TYPE, DATA_PIN, LED_COLOR_ORDER>(leds, NUM_LEDS);
+    FastLED.addLeds<LED_TYPE, DATA_PIN, LED_COLOR_ORDER>(leds, NUM_LEDS);
     FastLED.setBrightness(BRIGHTNESS);
     FastLED.setDither(1);
     
@@ -144,14 +144,14 @@ void loop() {
                 stageStartTime = mm;
                 stage = "WIN";
             }
-        }else{
-            if(lastInputTime+TIMEOUT < mm){
+        } else {
+            if (lastInputTime+TIMEOUT < mm){
                 stage = "SCREENSAVER";
             }
         }
-        if(stage == "SCREENSAVER"){
+        if (stage == "SCREENSAVER") {
             screenSaverTick();
-        }else if(stage == "PLAY"){
+        } else if(stage == "PLAY"){
             // PLAYING
             if(attacking && attackMillis+ATTACK_DURATION < mm) attacking = 0;
             
@@ -247,10 +247,10 @@ void loop() {
             stageStartTime = 0;
         }
         
-        Serial.print(millis()-mm);
-        Serial.print(" - ");
+        //Serial.print(millis()-mm);
+        //Serial.print(" - ");
         FastLED.show();
-        Serial.println(millis()-mm);
+        //Serial.println(millis()-mm);
     }
 }
 
@@ -264,35 +264,35 @@ void loadLevel(){
     playerPosition = 0;
     playerAlive = 1;
     switch(levelNumber){
-        case 0:
+        //case 0:
             // Left or right?
-            playerPosition = 200;
-            spawnEnemy(1, 0, 0, 0);
-            break;
-        case 1:
+        //    playerPosition = 200;
+        //    spawnEnemy(1, 0, 0, 0);
+        //    break;
+        case 0:
             // Slow moving enemy
             spawnEnemy(900, 0, 1, 0);
             break;
-        case 2:
+        case 1:
             // Spawning enemies at exit every 2 seconds
             spawnPool[0].Spawn(1000, 3000, 2, 0, 0);
             break;
-        case 3:
+        case 2:
             // Lava intro
             spawnLava(400, 490, 2000, 2000, 0, "OFF");
             spawnPool[0].Spawn(1000, 5500, 3, 0, 0);
             break;
-        case 4:
+        case 3:
             // Sin enemy
             spawnEnemy(700, 1, 7, 275);
             spawnEnemy(500, 1, 5, 250);
             break;
-        case 5:
+        case 4:
             // Conveyor
             spawnConveyor(100, 600, -1);
             spawnEnemy(800, 0, 0, 0);
             break;
-        case 6:
+        case 5:
             // Conveyor of enemies
             spawnConveyor(50, 1000, 1);
             spawnEnemy(300, 0, 0, 0);
@@ -303,7 +303,7 @@ void loadLevel(){
             spawnEnemy(800, 0, 0, 0);
             spawnEnemy(900, 0, 0, 0);
             break;
-        case 7:
+        case 6:
             // Lava run
             spawnLava(195, 300, 2000, 2000, 0, "OFF");
             spawnLava(350, 455, 2000, 2000, 0, "OFF");
@@ -311,12 +311,19 @@ void loadLevel(){
             spawnLava(660, 760, 2000, 2000, 0, "OFF");
             spawnPool[0].Spawn(1000, 3800, 4, 0, 0);
             break;
+        case 7:
+            //szymon und laerte level
+            spawnEnemy(250, 1, 5, 100);
+            spawnEnemy(400, 1, 4, 200);
+            spawnPool[0].Spawn(450, 2500, 3, -1, 3000);
+            spawnConveyor(500, 650, -1);
+            spawnLava(720, 900, 2000, 2000, 0, "OFF");
         case 8:
             // Sin enemy #2
             spawnEnemy(700, 1, 7, 275);
             spawnEnemy(500, 1, 5, 250);
-            spawnPool[0].Spawn(1000, 5500, 4, 0, 3000);
-            spawnPool[1].Spawn(0, 5500, 5, 1, 10000);
+            spawnPool[0].Spawn(1000, 5500, 4, 0, 5000);
+            spawnPool[1].Spawn(0, 5500, 3, 1, 15000);
             spawnConveyor(100, 900, -1);
             break;
         case 9:
@@ -587,7 +594,7 @@ void drawAttack(){
     if(!attacking) return;
     int n = map(millis() - attackMillis, 0, ATTACK_DURATION, 100, 5);
     for(int i = getLED(playerPosition-(ATTACK_WIDTH/2))+1; i<=getLED(playerPosition+(ATTACK_WIDTH/2))-1; i++){
-        leds[i] = CRGB(0, 0, n);
+        leds[i] = CRGB(n, 0, n); // I prefer it purple instead of blue (0, 0, n)
     }
     if(n > 90) {
         n = 255;
@@ -596,8 +603,8 @@ void drawAttack(){
         n = 0;
         leds[getLED(playerPosition)] = CRGB(0, 255, 0);
     }
-    leds[getLED(playerPosition-(ATTACK_WIDTH/2))] = CRGB(n, n, 255);
-    leds[getLED(playerPosition+(ATTACK_WIDTH/2))] = CRGB(n, n, 255);
+    leds[getLED(playerPosition-(ATTACK_WIDTH/2))] = CRGB(n, n, 127);
+    leds[getLED(playerPosition+(ATTACK_WIDTH/2))] = CRGB(n, n, 127);
 }
 
 int getLED(int pos){
